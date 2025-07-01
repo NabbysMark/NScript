@@ -2,6 +2,12 @@
 
 Yes, it pains me to use this language too.
 
+# Installation
+
+On windows, install the zip file, extract it and then you have to copy the path, put it in your environment variables.
+
+You can check if this worked by running `nacoscript -v` in Windows Powershell.
+
 # How to compile a new version of nacoscript if you
 
 run python -m PyInstaller --onefile nacoscript.py  
