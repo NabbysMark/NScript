@@ -5,7 +5,7 @@ from nscript.lexer import Lexer
 from nscript.parser import Parser
 from nscript.interpreter import Interpreter
 
-VERSION = "1.0.1"
+VERSION = "1.0.0"
 
 def main():
     if len(sys.argv) == 2 and sys.argv[1] in ("-v", "--version"):
