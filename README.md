@@ -4,11 +4,37 @@ Yes, it pains me to use this language too.
 
 # Installation
 
-On windows, install the zip file, extract it and then you have to copy the path, put it in your environment variables.
+On Windows, install the zip file, extract it and then you have to copy the path, put it in your environment variables.
 
 You can check if this worked by running `nacoscript -v` in Windows Powershell.
 
-# How to compile a new version of nacoscript if you
+## Linux Support
+
+1. **Extract the files** to a directory, e.g., `~/NacoScript`.
+2. **Add the directory to your PATH**:
+   ```sh
+   export PATH="$PATH:$HOME/NacoScript"
+   ```
+   You can add this line to your `.bashrc`, `.zshrc`, or equivalent shell config file for persistence.
+3. **Run scripts** using:
+   ```sh
+   python3 nacoscript.py yourscript.n
+   ```
+   or make `nacoscript.py` executable:
+   ```sh
+   chmod +x nacoscript.py
+   ./nacoscript.py yourscript.n
+   ```
+4. **Check version**:
+   ```sh
+   ./nacoscript.py -v
+   ```
+
+> **Note:**  
+> On Linux, the library folder is stored in `~/.local/share/nscript_libs` instead of `%LOCALAPPDATA%\nscript_libs`.  
+> Make sure your interpreter uses the correct path for Linux (see below).
+
+# How to compile a new version of nacoscript
 
 run python -m PyInstaller --onefile nacoscript.py  
 if you wanna build a new version of this, or if you've modified the code  
