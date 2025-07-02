@@ -10,6 +10,13 @@ class Parser:
         self.lexer = lexer
         self.current_token = self.lexer.get_next_token()
 
+    def _make_slice(self, start, end, step):
+        # Convert 1-based to 0-based for start/end if int, else None
+        s = start - 1 if isinstance(start, int) else None
+        e = end if end is not None and isinstance(end, int) else None
+        st = step if step is not None and isinstance(step, int) else None
+        return slice(s, e, st)
+
     def eat(self, token_type):
         if self.current_token.type == token_type:
             self.current_token = self.lexer.get_next_token()
@@ -98,9 +105,22 @@ class Parser:
                     node = FuncCall(node, args)
                 elif self.current_token.type == LBRACKET:
                     self.eat(LBRACKET)
-                    index = self.expr()
-                    self.eat(RBRACKET)
-                    node = Subscript(node, index)
+                    # Support full Python-like slicing: [start:end:step]
+                    start = self.expr() if self.current_token.type != COLON and self.current_token.type != RBRACKET else None
+                    if self.current_token.type == COLON:
+                        self.eat(COLON)
+                        end = self.expr() if self.current_token.type != COLON and self.current_token.type != RBRACKET else None
+                        if self.current_token.type == COLON:
+                            self.eat(COLON)
+                            step = self.expr() if self.current_token.type != RBRACKET else None
+                        else:
+                            step = None
+                        self.eat(RBRACKET)
+                        # Do not convert to 0-based here, let interpreter handle it
+                        node = Subscript(node, SliceNode(start, end, step))
+                    else:
+                        self.eat(RBRACKET)
+                        node = Subscript(node, start)
                 else:
                     break
             return node
@@ -313,20 +333,37 @@ class Parser:
         if self.current_token.type != 'BOOM':
             raise Exception("Expected 'BOOM' before loop variable name")
         self.eat('BOOM')
-        if self.current_token.type != 'ID':
+        # Support for-each: SPIN BOOM index, value IN mydict WE
+        if self.current_token.type == 'ID':
+            var1 = self.current_token.value
+            self.eat('ID')
+            if self.current_token.type == ',':
+                self.eat(',')
+                if self.current_token.type != 'ID':
+                    raise Exception("Expected value variable name after ','")
+                var2 = self.current_token.value
+                self.eat('ID')
+                if self.current_token.type != 'IN':
+                    raise Exception("Expected 'IN' after index, value")
+                self.eat('IN')
+                collection = self.expr()
+                self.eat('WE')
+                body = self.block()
+                return ForEachLoop(var1, var2, collection, body)
+            elif self.current_token.type == 'IS':
+                self.eat('IS')
+                start = self.expr()
+                if self.current_token.type != ',':
+                    raise Exception("Expected ',' after loop start value")
+                self.eat(',')
+                end = self.expr()
+                self.eat('WE')
+                body = self.block()
+                return ForLoop(var1, start, end, body)
+            else:
+                raise Exception("Expected ',' or 'IS' after loop variable name")
+        else:
             raise Exception("Expected loop variable name after BOOM")
-        var = self.current_token.value
-        self.eat('ID')
-        if self.current_token.type != 'IS':
-            raise Exception("Expected 'IS' after loop variable name")
-        self.eat('IS')
-        start = self.expr()
-        if self.current_token.type != ',':
-            raise Exception("Expected ',' after loop start value")
-        self.eat(',')
-        end = self.expr()
-        self.eat('WE')
-        body = self.block()
         return ForLoop(var, start, end, body)
 
     def block_statement(self):
@@ -539,3 +576,16 @@ class ImportAs:
         self.as_name = as_name
         self.only_name = only_name
         self.is_library = is_library
+
+class ForEachLoop:
+    def __init__(self, index_var, value_var, collection, body):
+        self.index_var = index_var
+        self.value_var = value_var
+        self.collection = collection
+        self.body = body
+
+class SliceNode:
+    def __init__(self, start, end, step):
+        self.start = start
+        self.end = end
+        self.step = step

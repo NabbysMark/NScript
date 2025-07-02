@@ -89,6 +89,13 @@ class ForLoop(AST):
         self.end = end
         self.body = body
 
+class ForEachLoop(AST):
+    def __init__(self, index_var, value_var, collection, body):
+        self.index_var = index_var
+        self.value_var = value_var
+        self.collection = collection
+        self.body = body
+
 class Len(AST):
     def __init__(self, value):
         self.value = value
@@ -160,3 +167,9 @@ class Input:
 class Gurt:
     def __init__(self, expr):
         self.expr = expr
+
+class SliceNode(AST):
+    def __init__(self, start, end, step):
+        self.start = start
+        self.end = end
+        self.step = step

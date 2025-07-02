@@ -36,6 +36,20 @@ class Interpreter:
         method = getattr(self, method_name, self.generic_visit)
         return method(node)
 
+    def visit_SliceNode(self, node):
+        # Convert 1-based indices to 0-based for start/end if they are ints
+        def to_zero_based(val):
+            if val is None:
+                return None
+            v = self.visit(val) if hasattr(val, '__class__') and not isinstance(val, int) else val
+            return v - 1 if isinstance(v, int) else v
+        start = to_zero_based(node.start)
+        end = self.visit(node.end) if node.end is not None and hasattr(node.end, '__class__') and not isinstance(node.end, int) else node.end
+        if isinstance(end, int):
+            end = end
+        step = self.visit(node.step) if node.step is not None and hasattr(node.step, '__class__') and not isinstance(node.step, int) else node.step
+        return slice(start, end, step)
+
     def generic_visit(self, node):
         raise Exception(f'No visit_{type(node).__name__} method')
 
@@ -224,6 +238,11 @@ class Interpreter:
     def visit_Subscript(self, node):
         value = self.visit(node.value)
         index = self.visit(node.index)
+        if isinstance(index, slice):
+            if isinstance(value, (str, list)):
+                return value[index]
+            else:
+                raise Exception("Slicing only supported on strings and lists")
         if not isinstance(index, int):
             raise Exception("Indices must be integers")
         idx = index - 1
@@ -236,6 +255,10 @@ class Interpreter:
         elif isinstance(value, list):
             if not (0 <= idx < len(value)):
                 raise Exception(f"Index {index} out of range for list")
+            return value[idx]
+        elif isinstance(value, str):
+            if not (0 <= idx < len(value)):
+                raise Exception(f"Index {index} out of range for string")
             return value[idx]
         else:
             raise Exception(f"Cannot subscript value of type {type(value).__name__}")
@@ -491,6 +514,26 @@ class Interpreter:
             return eval(str(expr_str), {"__builtins__": None}, {})
         except Exception as e:
             raise Exception(f"GURT error: {e}")
+
+    def visit_ForEachLoop(self, node):
+        collection = self.visit(node.collection)
+        result = None
+        if isinstance(collection, dict):
+            items = list(collection.items())
+            for idx, (k, v) in enumerate(items):
+                self.env[node.index_var] = k
+                self.env[node.value_var] = v
+                for stmt in node.body:
+                    result = self.visit(stmt)
+        elif isinstance(collection, list):
+            for idx, v in enumerate(collection):
+                self.env[node.index_var] = idx + 1
+                self.env[node.value_var] = v
+                for stmt in node.body:
+                    result = self.visit(stmt)
+        else:
+            raise Exception("Can only SPIN over lists or dictionaries")
+        return result
 
     def _to_python_value(self, value):
         if isinstance(value, dict):

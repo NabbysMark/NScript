@@ -60,6 +60,7 @@ WITH = 'WITH'
 SUPERMAN = 'SUPERMAN'
 INTERP_STRING = 'INTERP_STRING'
 AS = 'AS'
+IN = 'IN'
 
 class Token:
     def __init__(self, type_, value, line=None, pos=None):
@@ -193,7 +194,9 @@ class Lexer:
                 return Token(DOT, '.', self.line, self.col)
             if self.current_char.isalpha():
                 ident = self._id()
-                if ident == "EXTENDING":
+                if ident == "IN":
+                    return Token(IN, ident, self.line, self.col)
+                elif ident == "EXTENDING":
                     return Token(EXTENDING, ident, self.line, self.col)
                 elif ident == "WITH":
                     return Token(WITH, ident, self.line, self.col)
