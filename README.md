@@ -31,10 +31,9 @@ You can check if this worked by running `nacoscript -v` in Windows Powershell.
    ```
 
 > **Note:**  
-> On Linux, the library folder is stored in `~/.local/share/nscript_libs` instead of `%LOCALAPPDATA%\nscript_libs`.  
-> Make sure your interpreter uses the correct path for Linux (see below).
+> `~/.local/share/nscript_libs` `%LOCALAPPDATA%\nscript_libs`.
 
-# How to compile a new version of nacoscript if you
+# How to compile a new version of nacoscript
 
 run python -m PyInstaller --onefile nacoscript.py  
 if you wanna build a new version of this, or if you've modified the code  
