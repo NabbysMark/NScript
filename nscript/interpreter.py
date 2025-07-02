@@ -343,6 +343,11 @@ class Interpreter:
             return
         module_env, module_funcs, module_classes = self._load_module_env(node.module_path)
         alias = node.as_name if node.as_name else os.path.basename(node.module_path).replace('.n','')
+        class ModuleObj:
+            pass
+        mod_obj = ModuleObj()
+        for k, v in {**module_env, **module_funcs, **module_classes}.items():
+            setattr(mod_obj, k, v)
         if node.only_name:
             if node.only_name in module_env:
                 self.env[alias] = module_env[node.only_name]
@@ -353,7 +358,7 @@ class Interpreter:
             else:
                 raise Exception(f"'{node.only_name}' not found in module '{node.module_path}'")
         else:
-            self.env[alias] = {**module_env, **module_funcs, **module_classes}
+            self.env[alias] = mod_obj
 
     def _load_module_env(self, module_path):
         import sys, os

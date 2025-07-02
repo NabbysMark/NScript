@@ -4,7 +4,7 @@ Yes, it pains me to use this language too.
 
 # Installation
 
-On Windows, install the zip file, extract it and then you have to copy the path, put it in your environment variables.
+On windows, install the zip file, extract it and then you have to copy the path, put it in your environment variables.
 
 You can check if this worked by running `nacoscript -v` in Windows Powershell.
 
@@ -15,7 +15,7 @@ You can check if this worked by running `nacoscript -v` in Windows Powershell.
    ```sh
    export PATH="$PATH:$HOME/NacoScript"
    ```
-   You can add this line to your `.bashrc`, `.zshrc`, or equivalent shell config file for persistence.
+   Add this to your `.bashrc`, `.zshrc`, or equivalent for persistence.
 3. **Run scripts** using:
    ```sh
    python3 nacoscript.py yourscript.n
@@ -34,7 +34,7 @@ You can check if this worked by running `nacoscript -v` in Windows Powershell.
 > On Linux, the library folder is stored in `~/.local/share/nscript_libs` instead of `%LOCALAPPDATA%\nscript_libs`.  
 > Make sure your interpreter uses the correct path for Linux (see below).
 
-# How to compile a new version of nacoscript
+# How to compile a new version of nacoscript if you
 
 run python -m PyInstaller --onefile nacoscript.py  
 if you wanna build a new version of this, or if you've modified the code  
@@ -64,6 +64,11 @@ POW
 - `POPPIN` - Function definition
 - `RETURN` - Return from function
 - `GIVE LIBRARY "libname"` - Import a Python library
+- `GIVE ME "file"` - Import a NacoScript file
+- `AS` - Import with alias
+- `BUT ONLY` - Import only a specific function/variable/class
+- `KILL SELF` - Terminate the script
+- `SUPERMAN` - Call superclass constructor in class extending
 
 ## Functions
 
@@ -88,6 +93,27 @@ FELLA math.sqrt(16)
 
 All top-level functions and variables in `main.py` are accessible as `math.function()`.
 
+### Import with alias and selective import
+
+```nacoscript
+GIVE LIBRARY "math" AS mlib BUT ONLY sqrt
+FELLA mlib(16)
+```
+
+## Using NacoScript Modules
+
+```nacoscript
+GIVE ME "utils" AS u BUT ONLY helper
+FELLA u("test")
+```
+
+Or import all as a namespace:
+
+```nacoscript
+GIVE ME "utils" AS u
+FELLA u.helper("test")
+```
+
 ## Passing Functions as Arguments
 
 ```nacoscript
@@ -107,6 +133,42 @@ callTwice(sayHello, "Adrian")
 
 ```nacoscript
 // This is a comment
+```
+
+## String Interpolation
+
+```nacoscript
+YE name BOOM "Adrian"
+FELLA `Hello ${name}!`
+```
+
+## Classes and Extending
+
+```nacoscript
+LEARNING Person WE
+    POPPIN constructor(ts, name, age)
+        ts.name BOOM name
+        ts.age BOOM age
+    POW
+
+    POPPIN greet(ts)
+        FELLA `Hello, my name is ${ts.name} and I am ${ts.age} years old.`
+    POW
+POW
+
+EXTENDING Person WITH Student WE
+    POPPIN constructor(ts, name, age, school)
+        SUPERMAN(name, age)
+        ts.school BOOM school
+    POW
+
+    POPPIN greet(ts)
+        FELLA `Hi, I'm ${ts.name}, ${ts.age} years old, and I go to ${ts.school}.`
+    POW
+POW
+
+YE s BOOM BUILD Student("Alice", 13, "Elmore Elementary")
+s.greet()
 ```
 
 ## Checking Expressions (Comparisons & Logic)
