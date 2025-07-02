@@ -113,9 +113,14 @@ class ImportOnly(AST):
         self.name = name
 
 class ClassDef(AST):
-    def __init__(self, name, methods):
+    def __init__(self, name, methods, base_class=None):
         self.name = name
         self.methods = methods
+        self.base_class = base_class
+
+class SuperCall(AST):
+    def __init__(self, args):
+        self.args = args
 
 class ClassInstance(AST):
     def __init__(self, class_name, args):

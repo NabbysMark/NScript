@@ -55,6 +55,10 @@ DOT = 'DOT'
 LIBRARY = 'LIBRARY'
 KILL = 'KILL'
 SELF = 'SELF'
+EXTENDING = 'EXTENDING'
+WITH = 'WITH'
+SUPERMAN = 'SUPERMAN'
+INTERP_STRING = 'INTERP_STRING'
 
 class Token:
     def __init__(self, type_, value, line=None, pos=None):
@@ -188,7 +192,13 @@ class Lexer:
                 return Token(DOT, '.', self.line, self.col)
             if self.current_char.isalpha():
                 ident = self._id()
-                if ident == "KILL":
+                if ident == "EXTENDING":
+                    return Token(EXTENDING, ident, self.line, self.col)
+                elif ident == "WITH":
+                    return Token(WITH, ident, self.line, self.col)
+                elif ident == "SUPERMAN":
+                    return Token(SUPERMAN, ident, self.line, self.col)
+                elif ident == "KILL":
                     return Token(KILL, ident, self.line, self.col)
                 elif ident == "SELF":
                     return Token(SELF, ident, self.line, self.col)
@@ -308,6 +318,17 @@ class Lexer:
             if self.current_char == ',':
                 self.advance()
                 return Token(',', ',', self.line, self.col)
+            if self.current_char == '`':
+                # Parse interpolated string
+                result = ''
+                self.advance()
+                while self.current_char is not None and self.current_char != '`':
+                    result += self.current_char
+                    self.advance()
+                if self.current_char != '`':
+                    raise Exception("Unterminated interpolated string")
+                self.advance()
+                return Token(INTERP_STRING, result, self.line, self.col)
             raise Exception(f'Invalid character: {self.current_char}')
         return Token('EOF', None, self.line, self.col)
 

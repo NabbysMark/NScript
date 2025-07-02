@@ -1,6 +1,6 @@
 from nscript.lexer import (
     Lexer, NUMBER, FLOAT, DOUBLE, PLUS, MINUS, MULTIPLY, DIVIDE, LPAREN, RPAREN, EOF, FELLA, STRING, AT, POPPIN, RING, FEED, RETURN, TRUE, FALSE, LBRACKET, RBRACKET, LBRACE, RBRACE, COLON, SPIN, ASSIGN, HASH, TALLBOY, ALSO, MAYBE, ISNOT, NOT, GIVE, ME, BUT, ONLY, LEARNING, BUILD, DOT,
-    HUNGRY, FOR, CONVERTED, WAITING
+    HUNGRY, FOR, CONVERTED, WAITING, INTERP_STRING
 )
 from nscript.ast import Num, BinOp, Print, VarAssign, Var, Str, If, Compare, Program, FuncDef, FuncCall, Return, FeedOp, Bool, ListLiteral, DictLiteral, Subscript, ForLoop, Len, TallBoy, LogicalOp, Import, ImportOnly, ClassDef, ClassInstance, AttributeAccess, WhileLoop
 from nscript.ast import ToString, ToNumber, TypeOf, Nom, Input, Gurt
@@ -29,9 +29,18 @@ class Parser:
         elif token.type in (NUMBER, FLOAT, DOUBLE):
             self.eat(token.type)
             return Num(token)
+        elif token.type == INTERP_STRING:
+            value = token.value
+            self.eat(INTERP_STRING)
+            # Mark as interpolated string for interpreter
+            return Str(type('InterpolatedString', (), {'value': value, 'interpolated': True})())
         elif token.type == STRING:
             self.eat(STRING)
             return Str(token)
+        elif getattr(token, "value", None) and isinstance(token.value, str) and token.value.startswith("`") and token.value.endswith("`"):
+            raw = token.value[1:-1]
+            self.eat(STRING)
+            return Str(type('InterpolatedString', (), {'value': raw, 'interpolated': True})())
         elif token.type == TRUE:
             self.eat(TRUE)
             return Bool(True)
@@ -148,6 +157,33 @@ class Parser:
             self.eat('GURT')
             expr = self.expr()
             return Gurt(expr)
+        elif token.type == 'SUPERMAN':
+            self.eat('SUPERMAN')
+            args = []
+            if self.current_token.type == 'LPAREN':
+                self.eat('LPAREN')
+                if self.current_token.type != 'RPAREN':
+                    args.append(self.expr())
+                    while self.current_token.type == ',':
+                        self.eat(',')
+                        args.append(self.expr())
+                self.eat('RPAREN')
+            return SuperCall(args)
+        elif token.type == STRING:
+            value = token.value
+            self.eat(STRING)
+            import re
+            def interpolate(match):
+                expr_code = match.group(1)
+                # Parse the expression inside {}
+                expr_lexer = Lexer(expr_code)
+                expr_parser = Parser(expr_lexer)
+                expr_ast = expr_parser.expr()
+                return '{' + expr_code + '}'
+            if '{' in value and '}' in value:
+                # Defer interpolation to interpreter (store AST or mark as interpolated)
+                return Str(type('InterpolatedString', (), {'value': value, 'interpolated': True})())
+            return Str(token)
         else:
             raise Exception(f"Invalid syntax in factor at line {getattr(token, 'line', '?')}, pos {getattr(token, 'pos', '?')}, token: {token}")
 
@@ -258,6 +294,8 @@ class Parser:
                 return KillSelf()
             else:
                 raise Exception("Expected SELF after KILL")
+        elif self.current_token.type == 'EXTENDING':
+            return self.extending_class_def()
         else:
             return self.feed_expr()
 
@@ -433,6 +471,27 @@ class Parser:
         else:
             return Import(module_path)
 
+    def extending_class_def(self):
+        self.eat('EXTENDING')
+        if self.current_token.type != 'ID':
+            raise Exception("Expected base class name after EXTENDING")
+        base_class = self.current_token.value
+        self.eat('ID')
+        if self.current_token.type != 'WITH':
+            raise Exception("Expected WITH after EXTENDING <BaseClass>")
+        self.eat('WITH')
+        if self.current_token.type != 'ID':
+            raise Exception("Expected subclass name after WITH")
+        class_name = self.current_token.value
+        self.eat('ID')
+        self.eat('WE')
+        methods = {}
+        while self.current_token.type == POPPIN:
+            method = self.func_def()
+            methods[method.name] = method
+        self.eat('POW')
+        return ClassDef(class_name, methods, base_class=base_class)
+
     def class_def(self):
         self.eat(LEARNING)
         if self.current_token.type != 'ID':
@@ -457,3 +516,7 @@ class Parser:
 
 class KillSelf:
     is_kill_self = True
+
+class SuperCall:
+    def __init__(self, args):
+        self.args = args

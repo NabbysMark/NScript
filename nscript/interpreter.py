@@ -80,10 +80,16 @@ class Interpreter:
         return None
 
     def visit_ClassInstance(self, node):
-        if node.class_name not in self.classes:
+        class_def = self.classes.get(node.class_name)
+        if not class_def:
             raise Exception(f"Class '{node.class_name}' not defined")
-        class_def = self.classes[node.class_name]
         instance = {'__class__': class_def, '__fields__': {}}
+        if getattr(class_def, "base_class", None):
+            base = self.classes.get(class_def.base_class)
+            if base:
+                for k, v in base.methods.items():
+                    if k not in class_def.methods:
+                        class_def.methods[k] = v
         if 'constructor' in class_def.methods:
             ctor = class_def.methods['constructor']
             local_env = {'ts': instance}
@@ -95,6 +101,27 @@ class Interpreter:
                 self.visit(stmt)
             self.env = old_env
         return instance
+
+    def visit_SuperCall(self, node):
+        ts = self.env.get('ts')
+        if not ts:
+            raise Exception("SUPERMAN can only be called inside a class method")
+        class_def = ts.get('__class__')
+        base_class_name = getattr(class_def, "base_class", None)
+        if not base_class_name:
+            raise Exception("No base class to call SUPERMAN on")
+        base_class = self.classes.get(base_class_name)
+        if not base_class or 'constructor' not in base_class.methods:
+            raise Exception(f"Base class '{base_class_name}' has no constructor")
+        ctor = base_class.methods['constructor']
+        local_env = {'ts': ts}
+        for pname, arg in zip(ctor.params[1:], node.args):
+            local_env[pname] = self.visit(arg)
+        old_env = self.env
+        self.env = local_env
+        for stmt in ctor.body:
+            self.visit(stmt)
+        self.env = old_env
 
     def visit_AttributeAccess(self, node):
         obj = self.visit(node.obj)
@@ -313,10 +340,19 @@ class Interpreter:
         return dict(module_interpreter.env), dict(module_interpreter.functions), dict(module_interpreter.classes)
 
     def visit_Str(self, node):
-        return node.value
+        value = getattr(node, "value", None)
+        if getattr(node, "interpolated", False):
+            import re
+            def interpolate(match):
+                expr_code = match.group(1)
+                expr_lexer = Lexer(expr_code)
+                expr_parser = Parser(expr_lexer)
+                expr_ast = expr_parser.expr()
+                return str(self.visit(expr_ast))
+            return re.sub(r"\$\{([^}]+)\}", interpolate, str(value) if value is not None else "")
+        return value
 
     def visit_Var(self, node):
-        # Try to resolve as a function if not found in env
         if node.name in self.env:
             return self.env[node.name]
         elif node.name in self.functions:
