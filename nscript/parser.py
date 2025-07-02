@@ -204,6 +204,9 @@ class Parser:
             if '{' in value and '}' in value:
                 return Str(type('InterpolatedString', (), {'value': value, 'interpolated': True})())
             return Str(token)
+        if token.type == FEED:
+            self.eat(FEED)
+            return self.factor()
         else:
             raise Exception(f"Invalid syntax in factor at line {getattr(token, 'line', '?')}, pos {getattr(token, 'pos', '?')}, token: {token}")
 
@@ -321,9 +324,15 @@ class Parser:
 
     def while_loop(self):
         self.eat('WAITING')
-        self.eat('LPAREN')
-        condition = self.condition_expr()
-        self.eat('RPAREN')
+        if self.current_token.type == 'LPAREN':
+            self.eat('LPAREN')
+            condition = self.condition_expr()
+            if self.current_token.type == 'RPAREN':
+                self.eat('RPAREN')
+        else:
+            condition = self.condition_expr()
+        while self.current_token.type not in ('WE', 'EOF'):
+            self.current_token = self.lexer.get_next_token()
         self.eat('WE')
         body = self.block()
         return WhileLoop(condition, body)
@@ -333,7 +342,6 @@ class Parser:
         if self.current_token.type != 'BOOM':
             raise Exception("Expected 'BOOM' before loop variable name")
         self.eat('BOOM')
-        # Support for-each: SPIN BOOM index, value IN mydict WE
         if self.current_token.type == 'ID':
             var1 = self.current_token.value
             self.eat('ID')
