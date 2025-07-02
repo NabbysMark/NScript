@@ -59,6 +59,7 @@ EXTENDING = 'EXTENDING'
 WITH = 'WITH'
 SUPERMAN = 'SUPERMAN'
 INTERP_STRING = 'INTERP_STRING'
+AS = 'AS'
 
 class Token:
     def __init__(self, type_, value, line=None, pos=None):
@@ -319,7 +320,6 @@ class Lexer:
                 self.advance()
                 return Token(',', ',', self.line, self.col)
             if self.current_char == '`':
-                # Parse interpolated string
                 result = ''
                 self.advance()
                 while self.current_char is not None and self.current_char != '`':

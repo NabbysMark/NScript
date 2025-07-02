@@ -59,16 +59,18 @@ class Interpreter:
 
     def visit_Print(self, node):
         value = self.visit(node.value)
+        if hasattr(value, "interpolated") and getattr(value, "interpolated", False):
+            value = self.visit_Str(value)
+        elif hasattr(node.value, "interpolated") and getattr(node.value, "interpolated", False):
+            value = self.visit_Str(node.value)
         print(value)
         return None
 
     def visit_Program(self, node):
         for stmt in node.statements:
-            # Check for KILL SELF statement
             if hasattr(stmt, "token") and getattr(stmt.token, "type", None) == "KILL":
                 print("Script terminated by KILL SELF.")
                 sys.exit(1)
-            # Or check for a custom AST node if you parse KILL SELF as such
             if getattr(stmt, "is_kill_self", False):
                 print("Script terminated by KILL SELF.")
                 sys.exit(1)
@@ -195,7 +197,6 @@ class Interpreter:
                     return ret.value
                 self.env = old_env
                 return result
-            # Python function
             if callable(func_obj):
                 args = [self._to_python_value(self.visit(arg)) for arg in node.args]
                 return func_obj(*args)
@@ -314,6 +315,45 @@ class Interpreter:
             self.classes[node.name] = module_classes[node.name]
         else:
             raise Exception(f"'{node.name}' not found in module '{node.module_path}'")
+
+    def visit_ImportAs(self, node):
+        if node.is_library:
+            libname = node.module_path[len("LIBRARY "):].strip('"').strip("'")
+            local_libs_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "nscript_libs")
+            lib_dir = os.path.join(local_libs_dir, libname)
+            lib_main = os.path.join(lib_dir, "main.py")
+            lib_main = os.path.normpath(lib_main)
+            if not os.path.exists(lib_main):
+                raise Exception(f"Library '{libname}' not found at {lib_main}")
+            import importlib.util
+            spec = importlib.util.spec_from_file_location(f"nscript_libs.{libname}.main", lib_main)
+            if spec is None or spec.loader is None:
+                raise Exception(f"Could not load library '{libname}' from {lib_main}")
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            setattr(mod, "__nscript_pythonlib__", libname)
+            alias = node.as_name if node.as_name else libname
+            if node.only_name:
+                if not hasattr(mod, node.only_name):
+                    raise Exception(f"Library '{libname}' has no attribute '{node.only_name}'")
+                self.env[alias] = getattr(mod, node.only_name)
+            else:
+                self.libraries[alias] = mod
+                self.env[alias] = mod
+            return
+        module_env, module_funcs, module_classes = self._load_module_env(node.module_path)
+        alias = node.as_name if node.as_name else os.path.basename(node.module_path).replace('.n','')
+        if node.only_name:
+            if node.only_name in module_env:
+                self.env[alias] = module_env[node.only_name]
+            elif node.only_name in module_funcs:
+                self.env[alias] = module_funcs[node.only_name]
+            elif node.only_name in module_classes:
+                self.env[alias] = module_classes[node.only_name]
+            else:
+                raise Exception(f"'{node.only_name}' not found in module '{node.module_path}'")
+        else:
+            self.env[alias] = {**module_env, **module_funcs, **module_classes}
 
     def _load_module_env(self, module_path):
         import sys, os
@@ -448,7 +488,6 @@ class Interpreter:
             raise Exception(f"GURT error: {e}")
 
     def _to_python_value(self, value):
-        # Recursively convert NacoScript values to valid Python types
         if isinstance(value, dict):
             return {self._to_python_value(k): self._to_python_value(v) for k, v in value.items()}
         elif isinstance(value, list):

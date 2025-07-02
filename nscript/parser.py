@@ -1,6 +1,6 @@
 from nscript.lexer import (
     Lexer, NUMBER, FLOAT, DOUBLE, PLUS, MINUS, MULTIPLY, DIVIDE, LPAREN, RPAREN, EOF, FELLA, STRING, AT, POPPIN, RING, FEED, RETURN, TRUE, FALSE, LBRACKET, RBRACKET, LBRACE, RBRACE, COLON, SPIN, ASSIGN, HASH, TALLBOY, ALSO, MAYBE, ISNOT, NOT, GIVE, ME, BUT, ONLY, LEARNING, BUILD, DOT,
-    HUNGRY, FOR, CONVERTED, WAITING, INTERP_STRING
+    HUNGRY, FOR, CONVERTED, WAITING, INTERP_STRING, LIBRARY, KILL, SELF, EXTENDING, WITH, SUPERMAN, AS
 )
 from nscript.ast import Num, BinOp, Print, VarAssign, Var, Str, If, Compare, Program, FuncDef, FuncCall, Return, FeedOp, Bool, ListLiteral, DictLiteral, Subscript, ForLoop, Len, TallBoy, LogicalOp, Import, ImportOnly, ClassDef, ClassInstance, AttributeAccess, WhileLoop
 from nscript.ast import ToString, ToNumber, TypeOf, Nom, Input, Gurt
@@ -32,8 +32,10 @@ class Parser:
         elif token.type == INTERP_STRING:
             value = token.value
             self.eat(INTERP_STRING)
-            # Mark as interpolated string for interpreter
-            return Str(type('InterpolatedString', (), {'value': value, 'interpolated': True})())
+            s = Str(token)
+            s.value = value
+            setattr(s, 'interpolated', True)
+            return s
         elif token.type == STRING:
             self.eat(STRING)
             return Str(token)
@@ -175,13 +177,11 @@ class Parser:
             import re
             def interpolate(match):
                 expr_code = match.group(1)
-                # Parse the expression inside {}
                 expr_lexer = Lexer(expr_code)
                 expr_parser = Parser(expr_lexer)
                 expr_ast = expr_parser.expr()
                 return '{' + expr_code + '}'
             if '{' in value and '}' in value:
-                # Defer interpolation to interpreter (store AST or mark as interpolated)
                 return Str(type('InterpolatedString', (), {'value': value, 'interpolated': True})())
             return Str(token)
         else:
@@ -446,28 +446,40 @@ class Parser:
 
     def import_statement(self):
         self.eat(GIVE)
-        # Support GIVE LIBRARY "libname"
-        if self.current_token.type == 'LIBRARY':
-            self.eat('LIBRARY')
+        as_name = None
+        only_name = None
+        is_library = False
+        if self.current_token.type == LIBRARY:
+            is_library = True
+            self.eat(LIBRARY)
             if self.current_token.type != STRING:
                 raise Exception('Expected library name string after GIVE LIBRARY')
             libname = self.current_token.value
             self.eat(STRING)
-            # Use a special Import node with module_path = 'LIBRARY libname'
-            return Import(f'LIBRARY {libname}')
-        self.eat(ME)
-        if self.current_token.type != STRING:
-            raise Exception('Expected module path string after GIVE ME')
-        module_path = self.current_token.value
-        self.eat(STRING)
+            module_path = f'LIBRARY {libname}'
+        else:
+            self.eat(ME)
+            if self.current_token.type != STRING:
+                raise Exception('Expected module path string after GIVE ME')
+            module_path = self.current_token.value
+            self.eat(STRING)
+        if self.current_token.type == 'AS':
+            self.eat('AS')
+            if self.current_token.type != 'ID':
+                raise Exception('Expected name after AS')
+            as_name = self.current_token.value
+            self.eat('ID')
         if self.current_token.type == BUT:
             self.eat(BUT)
             self.eat(ONLY)
             if self.current_token.type != 'ID':
                 raise Exception('Expected variable or function name after BUT ONLY')
-            name = self.current_token.value
+            only_name = self.current_token.value
             self.eat('ID')
-            return ImportOnly(module_path, name)
+        if as_name or only_name:
+            return ImportAs(module_path, as_name, only_name, is_library)
+        elif is_library:
+            return Import(module_path)
         else:
             return Import(module_path)
 
@@ -520,3 +532,10 @@ class KillSelf:
 class SuperCall:
     def __init__(self, args):
         self.args = args
+
+class ImportAs:
+    def __init__(self, module_path, as_name, only_name=None, is_library=False):
+        self.module_path = module_path
+        self.as_name = as_name
+        self.only_name = only_name
+        self.is_library = is_library

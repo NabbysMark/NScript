@@ -1,1 +1,24 @@
-FELLA `Hello!`
+LEARNING Person WE
+    POPPIN constructor(ts, name, age)
+        ts.name BOOM name
+        ts.age BOOM age
+    POW
+
+    POPPIN greet(ts)
+        FELLA `hello my name is ${ts.name} and i am ${ts.age} years old`
+    POW
+POW
+
+EXTENDING Person WITH Student WE
+    POPPIN constructor(ts, name, age, school)
+        SUPERMAN(name, age)
+        ts.school BOOM school
+    POW
+
+    POPPIN greet(ts)
+        FELLA `hi im ${ts.name} im ${ts.age} years old and i go to ${ts.school}`
+    POW
+POW
+
+YE s BOOM BUILD Student("Alice", 13, "Elmore Elementary")
+s.greet()
