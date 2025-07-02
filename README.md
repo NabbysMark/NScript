@@ -31,7 +31,8 @@ You can check if this worked by running `nacoscript -v` in Windows Powershell.
    ```
 
 > **Note:**  
-> `~/.local/share/nscript_libs` `%LOCALAPPDATA%\nscript_libs`.
+> On Linux, the library folder is stored in `~/.local/share/nscript_libs` instead of `%LOCALAPPDATA%\nscript_libs`.  
+> Make sure your interpreter uses the correct path for Linux (see below).
 
 # How to compile a new version of nacoscript
 
