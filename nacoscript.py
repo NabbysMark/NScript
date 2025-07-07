@@ -1,11 +1,24 @@
 import sys
 import os
 import webbrowser
+import traceback
 from nscript.lexer import Lexer
 from nscript.parser import Parser
 from nscript.interpreter import Interpreter
 
 VERSION = "1.1.0"
+
+def handle_nscript_error(e):
+    print("\n--- NacoScript Error ---")
+    print(f"Error: {e}")
+    tb = getattr(e, "__traceback__", None)
+    if tb:
+        stack = traceback.extract_tb(tb)
+        for frame in stack:
+            if "nscript" in frame.filename or frame.filename.endswith(".n"):
+                print(f'  File "{frame.filename}", line {frame.lineno}, in {frame.name}')
+                print(f'    {frame.line}')
+    print("-----------------------\n")
 
 def main():
     if len(sys.argv) == 2 and sys.argv[1] in ("-v", "--version"):
@@ -21,13 +34,16 @@ def main():
         return
     if len(sys.argv) == 2 and sys.argv[1].lower().endswith('.n'):
         filename = sys.argv[1]
-        with open(filename, "r", encoding="utf-8") as f:
-            code = f.read()
-        lexer = Lexer(code)
-        parser = Parser(lexer)
-        tree = parser.parse()
-        interpreter = Interpreter()
-        interpreter.interpret(tree)
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                code = f.read()
+            lexer = Lexer(code)
+            parser = Parser(lexer)
+            tree = parser.parse()
+            interpreter = Interpreter()
+            interpreter.interpret(tree)
+        except Exception as e:
+            handle_nscript_error(e)
     else:
         print("NScript Interactive Console (type 'exit' to quit)")
         interpreter = Interpreter()
@@ -41,7 +57,7 @@ def main():
                 tree = parser.parse()
                 interpreter.interpret(tree)
             except Exception as e:
-                print(f"Error: {e}")
+                handle_nscript_error(e)
 
 if __name__ == "__main__":
     main()
