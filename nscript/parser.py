@@ -2,7 +2,7 @@ from nscript.lexer import (
     Lexer, NUMBER, FLOAT, DOUBLE, PLUS, MINUS, MULTIPLY, DIVIDE, LPAREN, RPAREN, EOF, FELLA, STRING, AT, POPPIN, RING, FEED, RETURN, TRUE, FALSE, LBRACKET, RBRACKET, LBRACE, RBRACE, COLON, SPIN, ASSIGN, HASH, TALLBOY, ALSO, MAYBE, ISNOT, NOT, GIVE, ME, BUT, ONLY, LEARNING, BUILD, DOT,
     HUNGRY, FOR, CONVERTED, WAITING, INTERP_STRING, LIBRARY, KILL, SELF, EXTENDING, WITH, SUPERMAN, AS
 )
-from nscript.ast import Num, BinOp, Print, VarAssign, Var, Str, If, Compare, Program, FuncDef, FuncCall, Return, FeedOp, Bool, ListLiteral, DictLiteral, Subscript, ForLoop, Len, TallBoy, LogicalOp, Import, ImportOnly, ClassDef, ClassInstance, AttributeAccess, WhileLoop
+from nscript.ast import Num, BinOp, Print, Var, Str, If, Compare, Program, FuncDef, FuncCall, Return, FeedOp, Bool, ListLiteral, DictLiteral, Subscript, ForLoop, Len, TallBoy, LogicalOp, Import, ImportOnly, ClassDef, ClassInstance, AttributeAccess, WhileLoop
 from nscript.ast import ToString, ToNumber, TypeOf, Nom, Input, Gurt
 
 class Parser:
@@ -342,6 +342,7 @@ class Parser:
         if self.current_token.type != 'BOOM':
             raise Exception("Expected 'BOOM' before loop variable name")
         self.eat('BOOM')
+        # Support for-each: SPIN BOOM index, value IN mydict WE
         if self.current_token.type == 'ID':
             var1 = self.current_token.value
             self.eat('ID')
@@ -460,12 +461,25 @@ class Parser:
             raise Exception("Expected variable name after YE")
         varname = self.current_token.value
         self.eat('ID')
+        types = None
+        if self.current_token.type == 'COLON':
+            self.eat('COLON')
+            types = []
+            while True:
+                if self.current_token.type != 'ID':
+                    raise Exception("Expected type name after ':'")
+                types.append(self.current_token.value)
+                self.eat('ID')
+                if self.current_token.type == '/':
+                    self.eat('/')
+                else:
+                    break
         if self.current_token.type == 'BOOM':
             self.eat('BOOM')
             value = self.expr()
-            return VarAssign(varname, value)
+            return VarAssign(varname, value, types)
         else:
-            return VarAssign(varname, None)
+            return VarAssign(varname, None, types)
 
     def func_def(self):
         self.eat(POPPIN)
@@ -597,3 +611,9 @@ class SliceNode:
         self.start = start
         self.end = end
         self.step = step
+
+class VarAssign:
+    def __init__(self, name, value, types=None):
+        self.name = name
+        self.value = value
+        self.types = types

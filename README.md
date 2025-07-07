@@ -47,9 +47,11 @@ to add something new.
 ```nacoscript
 YE x BOOM 10
 FELLA "Hello, World!"
+@
 WHAT (x IS 10) WE
     FELLA "x is ten"
 POW
+@
 ```
 
 ## Keywords

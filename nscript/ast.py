@@ -18,9 +18,10 @@ class Print(AST):
         self.value = value
 
 class VarAssign(AST):
-    def __init__(self, name, value):
+    def __init__(self, name, value, types=None):
         self.name = name
         self.value = value
+        self.types = types
 
 class Var(AST):
     def __init__(self, name):

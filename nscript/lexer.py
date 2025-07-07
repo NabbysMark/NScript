@@ -186,6 +186,9 @@ class Lexer:
             if self.current_char == ':':
                 self.advance()
                 return Token(COLON, ':', self.line, self.col)
+            if self.current_char == '/':
+                self.advance()
+                return Token('/', '/', self.line, self.col)
             if self.current_char == '#':
                 self.advance()
                 return Token(HASH, '#', self.line, self.col)

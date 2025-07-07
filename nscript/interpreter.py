@@ -13,6 +13,7 @@ class Interpreter:
         self.functions = {}
         self.classes = {}
         self.libraries = {}
+        self.var_types = {}  # Track variable types
 
         self._ensure_libs_in_appdata()
 
@@ -171,6 +172,17 @@ class Interpreter:
 
     def visit_VarAssign(self, node):
         value = self.visit(node.value) if node.value is not None else None
+        # Typechecking logic
+        if hasattr(node, "types") and node.types:
+            # Save types for this variable
+            self.var_types[node.name] = node.types
+            # Check initial assignment
+            if value is not None and not self._type_matches(value, node.types):
+                raise Exception(f"Type error: variable '{node.name}' expects {node.types}, got {type(value).__name__}")
+        elif node.name in self.var_types:
+            # Re-assignment: check type
+            if value is not None and not self._type_matches(value, self.var_types[node.name]):
+                raise Exception(f"Type error: variable '{node.name}' expects {self.var_types[node.name]}, got {type(value).__name__}")
         if isinstance(node.name, AttributeAccess):
             obj = self.visit(node.name.obj)
             attr = node.name.attr
@@ -179,6 +191,23 @@ class Interpreter:
         else:
             self.env[node.name] = value
             return value
+
+    def _type_matches(self, value, types):
+        type_map = {
+            'string': str,
+            'number': (int, float),
+            'int': int,
+            'float': float,
+            'boolean': bool,
+            'list': list,
+            'array': list,
+            'dict': dict,
+        }
+        for t in types:
+            py_type = type_map.get(t.lower(), None)
+            if py_type and isinstance(value, py_type):
+                return True
+        return False
 
     def visit_FuncCall(self, node):
         if isinstance(node.name, AttributeAccess):
