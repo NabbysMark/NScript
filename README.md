@@ -201,6 +201,79 @@ POW
 @
 ```
 
+## Typechecking
+
+You can declare variable types and function return types for type safety.
+
+### Variable Typechecking
+
+Declare a variable with a type using a colon after the name:
+
+```nacoscript
+YE myStr: string BOOM "Hello!"
+YE myNum: num BOOM 42
+YE myBool: bool BOOM true
+YE myList: list BOOM [1, 2, 3]
+YE myDict: dict BOOM {"a": 1}
+```
+
+If you assign a value of the wrong type, you will get a type error:
+
+```nacoscript
+YE myStr: string BOOM 123      // Type error!
+```
+
+#### Union Types
+
+You can allow multiple types using `/`:
+
+```nacoscript
+YE myVar: string / num BOOM "hi"
+myVar BOOM 123      // OK
+myVar BOOM [1,2,3]  // Type error!
+```
+
+Supported built-in types: `string`, `num`, `bool`, `list`, `dict` (and aliases: `str`, `number`, `boolean`, `array`, `dictionary`, `int`, `float`).
+
+#### Custom Types
+
+You can use class names as types:
+
+```nacoscript
+LEARNING Person WE
+    POPPIN constructor(ts, name)
+        ts.name BOOM name
+    POW
+POW
+
+YE p: Person BOOM BUILD Person("Ada")
+```
+
+### Function Return Typechecking
+
+You can specify what type a function must return using `WE: type`:
+
+```nacoscript
+POPPIN getstr() WE: string
+    RETURN "I return a string!"
+POW
+
+POPPIN makeperson(name) WE: Person
+    RETURN BUILD Person(name)
+POW
+```
+
+If the function returns a value of the wrong type, a type error will occur.
+
+### Typeof
+
+To check the type of a value at runtime:
+
+```nacoscript
+FELLA TYPEOF myStr      // prints "string"
+FELLA TYPEOF p          // prints "Person" for custom types
+```
+
 ## More Resources
 
 For more examples and advanced usage, see the `nscript_libs` folder and explore the built-in libraries.
