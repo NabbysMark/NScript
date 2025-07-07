@@ -11,7 +11,6 @@ class Parser:
         self.current_token = self.lexer.get_next_token()
 
     def _make_slice(self, start, end, step):
-        # Convert 1-based to 0-based for start/end if int, else None
         s = start - 1 if isinstance(start, int) else None
         e = end if end is not None and isinstance(end, int) else None
         st = step if step is not None and isinstance(step, int) else None
@@ -105,7 +104,6 @@ class Parser:
                     node = FuncCall(node, args)
                 elif self.current_token.type == LBRACKET:
                     self.eat(LBRACKET)
-                    # Support full Python-like slicing: [start:end:step]
                     start = self.expr() if self.current_token.type != COLON and self.current_token.type != RBRACKET else None
                     if self.current_token.type == COLON:
                         self.eat(COLON)
@@ -116,7 +114,6 @@ class Parser:
                         else:
                             step = None
                         self.eat(RBRACKET)
-                        # Do not convert to 0-based here, let interpreter handle it
                         node = Subscript(node, SliceNode(start, end, step))
                     else:
                         self.eat(RBRACKET)
@@ -342,7 +339,6 @@ class Parser:
         if self.current_token.type != 'BOOM':
             raise Exception("Expected 'BOOM' before loop variable name")
         self.eat('BOOM')
-        # Support for-each: SPIN BOOM index, value IN mydict WE
         if self.current_token.type == 'ID':
             var1 = self.current_token.value
             self.eat('ID')
@@ -497,8 +493,25 @@ class Parser:
                 params.append(self.current_token.value)
                 self.eat('ID')
         self.eat(RPAREN)
+        return_types = None
+        if self.current_token.type == 'WE':
+            self.eat('WE')
+            if self.current_token.type == 'COLON':
+                self.eat('COLON')
+                return_types = []
+                while True:
+                    if self.current_token.type != 'ID':
+                        raise Exception("Expected return type name after ':'")
+                    return_types.append(self.current_token.value)
+                    self.eat('ID')
+                    if self.current_token.type == '/':
+                        self.eat('/')
+                    else:
+                        break
+        else:
+            self.eat('WE')
         body = self.block()
-        return FuncDef(name, params, body)
+        return FuncDef(name, params, body, return_types)
 
     def func_call(self):
         raise Exception("The 'RING' keyword is no longer supported. Use standard function call syntax.")

@@ -47,10 +47,11 @@ class Program(AST):
         self.statements = statements
 
 class FuncDef(AST):
-    def __init__(self, name, params, body):
+    def __init__(self, name, params, body, return_types=None):
         self.name = name
         self.params = params
         self.body = body
+        self.return_types = return_types
 
 class FuncCall(AST):
     def __init__(self, name, args):

@@ -38,7 +38,6 @@ class Interpreter:
         return method(node)
 
     def visit_SliceNode(self, node):
-        # Convert 1-based indices to 0-based for start/end if they are ints
         def to_zero_based(val):
             if val is None:
                 return None
@@ -172,15 +171,11 @@ class Interpreter:
 
     def visit_VarAssign(self, node):
         value = self.visit(node.value) if node.value is not None else None
-        # Typechecking logic
         if hasattr(node, "types") and node.types:
-            # Save types for this variable
             self.var_types[node.name] = node.types
-            # Check initial assignment
             if value is not None and not self._type_matches(value, node.types):
                 raise Exception(f"Type error: variable '{node.name}' expects {node.types}, got {type(value).__name__}")
         elif node.name in self.var_types:
-            # Re-assignment: check type
             if value is not None and not self._type_matches(value, self.var_types[node.name]):
                 raise Exception(f"Type error: variable '{node.name}' expects {self.var_types[node.name]}, got {type(value).__name__}")
         if isinstance(node.name, AttributeAccess):
@@ -194,19 +189,27 @@ class Interpreter:
 
     def _type_matches(self, value, types):
         type_map = {
+            'str': str,
             'string': str,
+            'num': (int, float),
             'number': (int, float),
             'int': int,
             'float': float,
+            'bool': bool,
             'boolean': bool,
             'list': list,
             'array': list,
             'dict': dict,
+            'dictionary': dict,
         }
         for t in types:
             py_type = type_map.get(t.lower(), None)
             if py_type and isinstance(value, py_type):
                 return True
+            if isinstance(value, dict) and '__class__' in value:
+                class_def = value['__class__']
+                if hasattr(class_def, 'name') and class_def.name.lower() == t.lower():
+                    return True
         return False
 
     def visit_FuncCall(self, node):
@@ -237,8 +240,14 @@ class Interpreter:
                         result = self.visit(stmt)
                 except ReturnException as ret:
                     self.env = old_env
+                    if hasattr(func_obj, "return_types") and func_obj.return_types:
+                        if not self._type_matches(ret.value, func_obj.return_types):
+                            raise Exception(f"Function '{func_obj.name}' must return {func_obj.return_types}, got {type(ret.value).__name__}")
                     return ret.value
                 self.env = old_env
+                if hasattr(func_obj, "return_types") and func_obj.return_types:
+                    if not self._type_matches(result, func_obj.return_types):
+                        raise Exception(f"Function '{func_obj.name}' must return {func_obj.return_types}, got {type(result).__name__}")
                 return result
             if callable(func_obj):
                 args = [self._to_python_value(self.visit(arg)) for arg in node.args]

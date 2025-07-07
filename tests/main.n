@@ -1,1 +1,7 @@
-YE myStr: string BOOM "Hello, World!"
+POPPIN getstr() WE: string
+    return "I return a string!"
+POW
+
+YE myStr BOOM getstr()
+
+FELLA myStr
