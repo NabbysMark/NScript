@@ -1,2 +1,5 @@
-/tests/
-tests/
+/build/
+/dist/
+build/
+dist/
+*.spec

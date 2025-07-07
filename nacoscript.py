@@ -8,16 +8,22 @@ from nscript.interpreter import Interpreter
 
 VERSION = "1.1.0"
 
-def handle_nscript_error(e):
+def handle_nscript_error(e, script_file=None, playground=False):
     print("\n--- NacoScript Error ---")
     print(f"Error: {e}")
     tb = getattr(e, "__traceback__", None)
-    if tb:
+    if tb and not playground:
         stack = traceback.extract_tb(tb)
+        shown = False
         for frame in stack:
-            if "nscript" in frame.filename or frame.filename.endswith(".n"):
-                print(f'  File "{frame.filename}", line {frame.lineno}, in {frame.name}')
+            if frame.filename.endswith(".n") or (script_file and os.path.abspath(frame.filename) == os.path.abspath(script_file)):
+                print(f'  File "{os.path.basename(frame.filename)}", line {frame.lineno}')
                 print(f'    {frame.line}')
+                shown = True
+        if not shown and script_file:
+            print(f'  In script: {os.path.basename(script_file)}')
+    elif playground:
+        print("  (Playground mode: error in your code)")
     print("-----------------------\n")
 
 def main():
@@ -43,7 +49,7 @@ def main():
             interpreter = Interpreter()
             interpreter.interpret(tree)
         except Exception as e:
-            handle_nscript_error(e)
+            handle_nscript_error(e, script_file=filename)
     else:
         print("NScript Interactive Console (type 'exit' to quit)")
         interpreter = Interpreter()
@@ -57,7 +63,7 @@ def main():
                 tree = parser.parse()
                 interpreter.interpret(tree)
             except Exception as e:
-                handle_nscript_error(e)
+                handle_nscript_error(e, playground=True)
 
 if __name__ == "__main__":
     main()
