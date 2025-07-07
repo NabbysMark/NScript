@@ -1,7 +1,12 @@
-POPPIN getstr() WE: string
-    return "I return a string!"
+LEARNING Person WE
+    POPPIN constructor(ts, name) WE
+        ts.name BOOM name
+    POW
 POW
 
-YE myStr BOOM getstr()
+POPPIN makeperson(name) WE: Person
+    return BUILD Person(name)
+POW
 
-FELLA myStr
+YE p: Person BOOM makeperson("Ada")
+FELLA TYPEOF p

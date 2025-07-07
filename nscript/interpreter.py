@@ -498,6 +498,8 @@ class Interpreter:
         elif isinstance(value, list):
             return "list"
         elif isinstance(value, dict):
+            if "__class__" in value and hasattr(value["__class__"], "name"):
+                return value["__class__"].name
             return "dictionary"
         elif value is None:
             return "none"
