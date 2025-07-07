@@ -241,12 +241,13 @@ You can use class names as types:
 
 ```nacoscript
 LEARNING Person WE
-    POPPIN constructor(ts, name)
+    POPPIN constructor(ts, name) WE
         ts.name BOOM name
     POW
 POW
 
 YE p: Person BOOM BUILD Person("Ada")
+FELLA TYPEOF p      // prints "Person"
 ```
 
 ### Function Return Typechecking
@@ -261,17 +262,32 @@ POW
 POPPIN makeperson(name) WE: Person
     RETURN BUILD Person(name)
 POW
+
+YE p: Person BOOM makeperson("Ada")
 ```
 
-If the function returns a value of the wrong type, a type error will occur.
-
-### Typeof
-
-To check the type of a value at runtime:
+### Type Errors
 
 ```nacoscript
-FELLA TYPEOF myStr      // prints "string"
-FELLA TYPEOF p          // prints "Person" for custom types
+YE myNum: num BOOM "not a number"   // Type error!
+POPPIN bad() WE: string
+    RETURN 123                      // Type error!
+POW
+```
+
+### Typeof Usage
+
+```nacoscript
+YE myList: list BOOM [1, 2, 3]
+FELLA TYPEOF myList    // prints "list"
+
+LEARNING Animal WE
+    POPPIN constructor(ts, name) WE
+        ts.name BOOM name
+    POW
+POW
+YE a: Animal BOOM BUILD Animal("Dog")
+FELLA TYPEOF a         // prints "Animal"
 ```
 
 ## More Resources

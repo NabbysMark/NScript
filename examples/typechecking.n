@@ -1,0 +1,16 @@
+// Examples of variable typechecking
+
+YE myStr: string BOOM "Hello!"
+YE myNum: num BOOM 42
+YE myBool: bool BOOM true
+YE myList: list BOOM [1, 2, 3]
+YE myDict: dict BOOM {"a": 1}
+
+FELLA myStr
+FELLA myNum
+FELLA myBool
+FELLA myList
+FELLA myDict
+
+// Uncomment for type error:
+// YE bad: num BOOM "not a number"

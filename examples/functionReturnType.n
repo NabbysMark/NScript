@@ -1,0 +1,17 @@
+// Function return typechecking
+
+POPPIN getstr() WE: string
+    RETURN "I return a string!"
+POW
+
+POPPIN getnum() WE: num
+    RETURN 42
+POW
+
+FELLA getstr()
+FELLA getnum()
+
+// Uncomment for type error:
+// POPPIN bad() WE: string
+//     RETURN 123
+// POW

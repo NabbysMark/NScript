@@ -1,0 +1,9 @@
+// Examples of union types
+
+YE myVar: string / num BOOM "hi"
+FELLA myVar
+myVar BOOM 123
+FELLA myVar
+
+// Uncomment for type error:
+// myVar BOOM [1,2,3]

@@ -9,4 +9,4 @@ POPPIN makeperson(name) WE: Person
 POW
 
 YE p: Person BOOM makeperson("Ada")
-FELLA TYPEOF p
+FELLA TYPEOF p      // prints "Person"
