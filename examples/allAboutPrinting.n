@@ -1,0 +1,4 @@
+YE myString: string BOOM "Hello, World!"
+
+FELLA myString
+FELLA `This is my string: ${myString}`
