@@ -227,33 +227,33 @@ class Interpreter:
                 func_obj = self.functions[node.name.name]
         elif isinstance(node.name, str) and node.name in self.functions:
             func_obj = self.functions[node.name]
-        if func_obj:
-            if hasattr(func_obj, "params") and hasattr(func_obj, "body"):
-                old_env = self.env.copy()
-                local_env = old_env.copy()
-                for param, arg in zip(func_obj.params, node.args):
-                    local_env[param] = self.visit(arg)
-                self.env = local_env
-                result = None
-                try:
-                    for stmt in func_obj.body:
-                        result = self.visit(stmt)
-                except ReturnException as ret:
-                    self.env = old_env
-                    if hasattr(func_obj, "return_types") and func_obj.return_types:
-                        if not self._type_matches(ret.value, func_obj.return_types):
-                            raise Exception(f"Function '{func_obj.name}' must return {func_obj.return_types}, got {type(ret.value).__name__}")
-                    return ret.value
+        elif hasattr(node.name, "body") and hasattr(node.name, "params"):
+            func_obj = node.name
+        if func_obj and not isinstance(func_obj, str) and hasattr(func_obj, "params") and hasattr(func_obj, "body"):
+            old_env = self.env.copy()
+            local_env = old_env.copy()
+            for param, arg in zip(func_obj.params, node.args):
+                local_env[param] = self.visit(arg)
+            self.env = local_env
+            result = None
+            try:
+                for stmt in func_obj.body:
+                    result = self.visit(stmt)
+            except ReturnException as ret:
                 self.env = old_env
                 if hasattr(func_obj, "return_types") and func_obj.return_types:
-                    if not self._type_matches(result, func_obj.return_types):
-                        raise Exception(f"Function '{func_obj.name}' must return {func_obj.return_types}, got {type(result).__name__}")
-                return result
-            if callable(func_obj):
-                args = [self._to_python_value(self.visit(arg)) for arg in node.args]
-                return func_obj(*args)
-            raise Exception(f"Variable '{getattr(node.name, 'name', node.name)}' is not callable")
-        raise Exception(f"Function '{getattr(node.name, 'name', node.name)}' not defined")
+                    if not self._type_matches(ret.value, func_obj.return_types):
+                        raise Exception(f"Function '{func_obj.name}' must return {func_obj.return_types}, got {type(ret.value).__name__}")
+                return ret.value
+            self.env = old_env
+            if hasattr(func_obj, "return_types") and func_obj.return_types:
+                if not self._type_matches(result, func_obj.return_types):
+                    raise Exception(f"Function '{func_obj.name}' must return {func_obj.return_types}, got {type(result).__name__}")
+            return result
+        if func_obj and callable(func_obj):
+            args = [self._to_python_value(self.visit(arg)) for arg in node.args]
+            return func_obj(*args)
+        raise Exception(f"Function '{getattr(node.name, 'name', node.name)}' not defined or is not callable")
 
     def visit_Return(self, node):
         value = self.visit(node.value)
