@@ -1,7 +1,7 @@
 import sys
-from nscript.lexer import Lexer
-from nscript.parser import Parser
-from nscript.interpreter import Interpreter
+from processor.lexer import Lexer
+from processor.parser import Parser
+from processor.interpreter import Interpreter
 
 def main():
     if len(sys.argv) < 2:

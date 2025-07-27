@@ -2,10 +2,10 @@ import os
 import sys
 import shutil
 from typing import Any
-from nscript.lexer import Lexer
-from nscript.parser import Parser
-from nscript.parser import AttributeAccess, Var
-from nscript.ast import Var
+from processor.lexer import Lexer
+from processor.parser import Parser
+from processor.parser import AttributeAccess, Var
+from processor.ast import Var
 
 class Interpreter:
     def __init__(self):
@@ -442,8 +442,6 @@ class Interpreter:
 
     def _load_module_env(self, module_path):
         import sys, os
-        from nscript.lexer import Lexer
-        from nscript.parser import Parser
         if not module_path.endswith('.n'):
             module_path += '.n'
         main_file = sys.argv[1] if len(sys.argv) > 1 else __file__

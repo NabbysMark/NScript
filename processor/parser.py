@@ -1,9 +1,9 @@
-from nscript.lexer import (
+from processor.lexer import (
     Lexer, NUMBER, FLOAT, DOUBLE, PLUS, MINUS, MULTIPLY, DIVIDE, LPAREN, RPAREN, EOF, FELLA, STRING, AT, POPPIN, RING, FEED, RETURN, TRUE, FALSE, LBRACKET, RBRACKET, LBRACE, RBRACE, COLON, SPIN, ASSIGN, HASH, TALLBOY, ALSO, MAYBE, ISNOT, NOT, GIVE, ME, BUT, ONLY, LEARNING, BUILD, DOT,
     HUNGRY, FOR, CONVERTED, WAITING, INTERP_STRING, LIBRARY, KILL, SELF, EXTENDING, WITH, SUPERMAN, AS
 )
-from nscript.ast import Num, BinOp, Print, Var, Str, If, Compare, Program, FuncDef, FuncCall, Return, FeedOp, Bool, ListLiteral, DictLiteral, Subscript, ForLoop, Len, TallBoy, LogicalOp, Import, ImportOnly, ClassDef, ClassInstance, AttributeAccess, WhileLoop
-from nscript.ast import ToString, ToNumber, TypeOf, Nom, Input, Gurt
+from processor.ast import Num, BinOp, Print, Var, Str, If, Compare, Program, FuncDef, FuncCall, Return, FeedOp, Bool, ListLiteral, DictLiteral, Subscript, ForLoop, Len, TallBoy, LogicalOp, Import, ImportOnly, ClassDef, ClassInstance, AttributeAccess, WhileLoop
+from processor.ast import ToString, ToNumber, TypeOf, Nom, Input, Gurt
 
 class Parser:
     def __init__(self, lexer: Lexer):

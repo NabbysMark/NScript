@@ -3,11 +3,11 @@ import os
 import webbrowser
 import traceback
 import shutil
-from nscript.lexer import Lexer
-from nscript.parser import Parser
-from nscript.interpreter import Interpreter
+from processor.lexer import Lexer
+from processor.parser import Parser
+from processor.interpreter import Interpreter
 
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -18,19 +18,25 @@ def resource_path(relative_path):
 
 def ensure_default_libs():
     local_libs_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "nscript_libs")
-    default_libs_dir = os.path.join(resource_path("nscript"), "defaultlibs")
-    if not os.path.exists(local_libs_dir):
-        os.makedirs(local_libs_dir, exist_ok=True)
-    if os.path.exists(default_libs_dir):
-        for libname in os.listdir(default_libs_dir):
-            src = os.path.join(default_libs_dir, libname)
-            dst = os.path.join(local_libs_dir, libname)
-            if os.path.isdir(src):
-                if not os.path.exists(dst):
-                    shutil.copytree(src, dst)
-            elif os.path.isfile(src):
-                if not os.path.exists(dst):
-                    shutil.copyfile(src, dst)
+    target_libs_dir = os.path.join(local_libs_dir, "defaultlibs")
+    default_libs_dir = resource_path("defaultlibs")
+    print(f"default_libs_dir resolved to: {default_libs_dir}")
+    print(f"target_libs_dir resolved to: {target_libs_dir}")
+    if not os.path.exists(target_libs_dir):
+        os.makedirs(target_libs_dir, exist_ok=True)
+    if not os.path.exists(default_libs_dir):
+        print(f"[WARNING] Default libs folder not found: {default_libs_dir}")
+        return
+    for root, dirs, files in os.walk(default_libs_dir):
+        rel_path = os.path.relpath(root, default_libs_dir)
+        target_dir = os.path.join(target_libs_dir, rel_path) if rel_path != "." else target_libs_dir
+        if not os.path.exists(target_dir):
+            os.makedirs(target_dir, exist_ok=True)
+        for file in files:
+            src_file = os.path.join(root, file)
+            dst_file = os.path.join(target_dir, file)
+            if not os.path.exists(dst_file):
+                shutil.copyfile(src_file, dst_file)
 
 def handle_nscript_error(e, script_file=None, playground=False):
     print("\n--- NacoScript Error ---")
