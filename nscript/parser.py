@@ -70,6 +70,39 @@ class Parser:
                     args.append(self.expr())
             self.eat(RPAREN)
             return ClassInstance(class_name, args)
+        elif token.type == POPPIN:
+            self.eat(POPPIN)
+            self.eat(LPAREN)
+            params = []
+            if self.current_token.type == 'ID':
+                params.append(self.current_token.value)
+                self.eat('ID')
+                while self.current_token.type == ',':
+                    self.eat(',')
+                    if self.current_token.type != 'ID':
+                        raise Exception("Expected parameter name after ',' in POPPIN")
+                    params.append(self.current_token.value)
+                    self.eat('ID')
+            self.eat(RPAREN)
+            return_types = None
+            if self.current_token.type == 'WE':
+                self.eat('WE')
+                if self.current_token.type == 'COLON':
+                    self.eat('COLON')
+                    return_types = []
+                    while True:
+                        if self.current_token.type != 'ID':
+                            raise Exception("Expected return type name after ':'")
+                        return_types.append(self.current_token.value)
+                        self.eat('ID')
+                        if self.current_token.type == '/':
+                            self.eat('/')
+                        else:
+                            break
+            else:
+                self.eat('WE')
+            body = self.block()
+            return FuncDef(None, params, body, return_types)
         elif token.type == 'ID':
             varname = token.value
             self.eat('ID')
@@ -462,10 +495,40 @@ class Parser:
             self.eat('COLON')
             types = []
             while True:
-                if self.current_token.type != 'ID':
-                    raise Exception("Expected type name after ':'")
-                types.append(self.current_token.value)
-                self.eat('ID')
+                if self.current_token.type == 'LPAREN':
+                    self.eat('LPAREN')
+                    arg_types = []
+                    if self.current_token.type == 'ID':
+                        arg_types.append(self.current_token.value)
+                        self.eat('ID')
+                        while self.current_token.type == ',':
+                            self.eat(',')
+                            if self.current_token.type != 'ID':
+                                raise Exception("Expected argument type after ',' in function type")
+                            arg_types.append(self.current_token.value)
+                            self.eat('ID')
+                    self.eat('RPAREN')
+
+                    if self.current_token.type == '-':
+                        self.eat('-')
+                        if self.current_token.type == '>':
+                            self.eat('>')
+                        else:
+                            raise Exception("Expected '>' after '-' in function type")
+                    elif self.current_token.type == '->':
+                        self.eat('->')
+                    else:
+                        raise Exception("Expected '->' after function type arguments")
+                    if self.current_token.type != 'ID':
+                        raise Exception("Expected return type after '->' in function type")
+                    ret_type = self.current_token.value
+                    self.eat('ID')
+                    types.append(('func', arg_types, ret_type))
+                else:
+                    if self.current_token.type != 'ID':
+                        raise Exception("Expected type name after ':'")
+                    types.append(self.current_token.value)
+                    self.eat('ID')
                 if self.current_token.type == '/':
                     self.eat('/')
                 else:
@@ -485,13 +548,29 @@ class Parser:
         self.eat('ID')
         self.eat(LPAREN)
         params = []
+        param_types = {}
         if self.current_token.type == 'ID':
-            params.append(self.current_token.value)
+            pname = self.current_token.value
             self.eat('ID')
+            
+            if self.current_token.type == 'COLON':
+                self.eat('COLON')
+                if self.current_token.type != 'ID':
+                    raise Exception("Expected type after ':' in parameter")
+                param_types[pname] = self.current_token.value
+                self.eat('ID')
+            params.append(pname)
             while self.current_token.type == ',':
                 self.eat(',')
-                params.append(self.current_token.value)
+                pname = self.current_token.value
                 self.eat('ID')
+                if self.current_token.type == 'COLON':
+                    self.eat('COLON')
+                    if self.current_token.type != 'ID':
+                        raise Exception("Expected type after ':' in parameter")
+                    param_types[pname] = self.current_token.value
+                    self.eat('ID')
+                params.append(pname)
         self.eat(RPAREN)
         return_types = None
         if self.current_token.type == 'WE':
@@ -511,7 +590,8 @@ class Parser:
         else:
             self.eat('WE')
         body = self.block()
-        return FuncDef(name, params, body, return_types)
+        func = FuncDef(name, params, body, return_types)
+        return func
 
     def func_call(self):
         raise Exception("The 'RING' keyword is no longer supported. Use standard function call syntax.")

@@ -141,8 +141,14 @@ class Lexer:
                 self.advance()
                 return Token(PLUS, '+', self.line, self.col)
             if self.current_char == '-':
-                self.advance()
-                return Token(MINUS, '-', self.line, self.col)
+                next_pos = self.pos + 1
+                if next_pos < len(self.text) and self.text[next_pos] == '>':
+                    self.advance()
+                    self.advance()
+                    return Token('->', '->', self.line, self.col)
+                else:
+                    self.advance()
+                    return Token(MINUS, '-', self.line, self.col)
             if self.current_char == '*':
                 self.advance()
                 return Token(MULTIPLY, '*', self.line, self.col)
@@ -258,7 +264,7 @@ class Lexer:
                     return Token(RING, ident, self.line, self.col)
                 elif ident == "FEED":
                     return Token(FEED, ident, self.line, self.col)
-                elif ident == "return":
+                elif ident == "RETURN" or ident == "return":
                     return Token(RETURN, ident, self.line, self.col)
                 elif ident == "UNDER":
                     return Token('UNDER', ident, self.line, self.col)

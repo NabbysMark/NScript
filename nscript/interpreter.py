@@ -13,7 +13,7 @@ class Interpreter:
         self.functions = {}
         self.classes = {}
         self.libraries = {}
-        self.var_types = {}  # Track variable types
+        self.var_types = {}
 
         self._ensure_libs_in_appdata()
 
@@ -185,6 +185,8 @@ class Interpreter:
             return value
         else:
             self.env[node.name] = value
+            if hasattr(value, "__class__") and value.__class__.__name__ == "FuncDef":
+                self.functions[node.name] = value
             return value
 
     def _type_matches(self, value, types):
@@ -203,13 +205,39 @@ class Interpreter:
             'dictionary': dict,
         }
         for t in types:
-            py_type = type_map.get(t.lower(), None)
-            if py_type and isinstance(value, py_type):
-                return True
-            if isinstance(value, dict) and '__class__' in value:
-                class_def = value['__class__']
-                if hasattr(class_def, 'name') and class_def.name.lower() == t.lower():
+            if isinstance(t, tuple) and t[0] == 'func':
+                if not hasattr(value, "params") or not hasattr(value, "body"):
+                    continue
+                arg_types, ret_type = t[1], t[2]
+                if isinstance(value, dict) or not hasattr(value, "params"):
+                    continue
+                if len(value.params) != len(arg_types):
+                    continue
+                if hasattr(value, "param_types"):
+                    for pname, expected_type in zip(value.params, arg_types):
+                        if pname in value.param_typets and value.param_types[pname] != expected_type:
+                            break
+                    else:
+                        if hasattr(value, "return_types") and value.return_types:
+                            if ret_type in value.return_types:
+                                return True
+                        elif not hasattr(value, "return_types") or value.return_types is None:
+                            return True
+                        continue
+                else:
+                    if hasattr(value, "return_types") and value.return_types:
+                        if ret_type in value.return_types:
+                            return True
+                    elif not hasattr(value, "return_types") or value.return_types is None:
+                        return True
+            elif isinstance(t, str):
+                py_type = type_map.get(t.lower(), None)
+                if py_type and isinstance(value, py_type):
                     return True
+                if isinstance(value, dict) and '__class__' in value:
+                    class_def = value['__class__']
+                    if hasattr(class_def, 'name') and class_def.name.lower() == t.lower():
+                        return True
         return False
 
     def visit_FuncCall(self, node):
@@ -225,6 +253,8 @@ class Interpreter:
                 func_obj = self.env[node.name.name]
             elif node.name.name in self.functions:
                 func_obj = self.functions[node.name.name]
+            elif node.name.name is None:
+                func_obj = node.name
         elif isinstance(node.name, str) and node.name in self.functions:
             func_obj = self.functions[node.name]
         elif hasattr(node.name, "body") and hasattr(node.name, "params"):
@@ -233,7 +263,10 @@ class Interpreter:
             old_env = self.env.copy()
             local_env = old_env.copy()
             for param, arg in zip(func_obj.params, node.args):
-                local_env[param] = self.visit(arg)
+                if hasattr(arg, "__class__") and arg.__class__.__name__ == "FuncDef" and getattr(arg, "name", None) is None:
+                    local_env[param] = arg
+                else:
+                    local_env[param] = self.visit(arg)
             self.env = local_env
             result = None
             try:
@@ -460,7 +493,25 @@ class Interpreter:
 
     def visit_Var(self, node):
         if node.name in self.env:
-            return self.env[node.name]
+            value = self.env[node.name]
+            if hasattr(value, "__class__") and value.__class__.__name__ == "FuncDef" and getattr(value, "name", None) is None:
+                def anon_func(*args):
+                    old_env = self.env.copy()
+                    local_env = old_env.copy()
+                    for param, arg in zip(value.params, args):
+                        local_env[param] = arg
+                    self.env = local_env
+                    result = None
+                    try:
+                        for stmt in value.body:
+                            result = self.visit(stmt)
+                    except ReturnException as ret:
+                        self.env = old_env
+                        return ret.value
+                    self.env = old_env
+                    return result
+                return anon_func
+            return value
         elif node.name in self.functions:
             return self.functions[node.name]
         else:
@@ -539,7 +590,7 @@ class Interpreter:
 
     def visit_FuncDef(self, node):
         self.functions[node.name] = node
-        return None
+        return node  # <-- Return the function object
 
     def visit_Input(self, node):
         prompt = self.visit(node.prompt_expr)
