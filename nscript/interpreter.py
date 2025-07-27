@@ -15,20 +15,6 @@ class Interpreter:
         self.libraries = {}
         self.var_types = {}
 
-        self._ensure_libs_in_appdata()
-
-    def _ensure_libs_in_appdata(self):
-        local_libs_dir = os.path.join(os.environ.get("LOCALAPPDATA", ""), "nscript_libs")
-        if not os.path.exists(local_libs_dir):
-            os.makedirs(local_libs_dir, exist_ok=True)
-            defaultlibs_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "defaultlibs"))
-            if os.path.exists(defaultlibs_dir):
-                for fname in os.listdir(defaultlibs_dir):
-                    src = os.path.join(defaultlibs_dir, fname)
-                    dst = os.path.join(local_libs_dir, fname)
-                    if os.path.isfile(src):
-                        shutil.copyfile(src, dst)
-
     def interpret(self, node):
         return self.visit(node)
 

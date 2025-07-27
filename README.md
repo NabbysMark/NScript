@@ -38,7 +38,7 @@ You can check if this worked by running `nacoscript -v` in Windows Powershell.
 
 1. Clone the Repostiory
 
-2. run python -m PyInstaller --onefile nacoscript.py
+2. run `python -m PyInstaller --onefile nacoscript.py`
 
 # Documentation
 
